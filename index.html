@@ -1,338 +1,261 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#090d18">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TunLine | Entertainment Database</title>
 <style>
-:root{--bg:#090d18;--panel:#111827;--line:#252e40;--text:#f4f4fa;--muted:#9da8bb;--purple:#9574ff;--danger:#ff647c}
+:root{--bg:#090d18;--panel:#111827;--line:#252e40;--text:#f4f4fa;--muted:#9da8bb;--purple:#9574ff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-header{height:68px;display:grid;grid-template-columns:42px 1fr 42px;align-items:center;padding:0 14px;background:#101626;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.header-btn{border:0;background:none;color:white;font-size:25px;cursor:pointer;padding:5px;width:38px;height:42px}
-.header-left{justify-self:start;z-index:26}.header-right{justify-self:end;z-index:26}
-.logo{color:var(--purple);font-size:26px;font-weight:900;letter-spacing:1px;text-align:center}
-.search-box{display:none;position:absolute;top:0;left:55px;right:12px;height:68px;background:#101626;padding:0 5px 0 0;align-items:center;gap:7px;z-index:25}
-.search-box.active{display:flex}.search-box input{flex:1;width:0;min-width:0;padding:10px 11px;background:#090d18;color:white;border:1px solid #35405a;border-radius:7px;outline:none;font-size:14px}
-.search-box input:focus{border-color:var(--purple)}.search-close{width:32px;height:38px;flex-shrink:0;background:none;border:0;color:white;font-size:27px;cursor:pointer}
-header.search-open .logo,header.search-open #searchBtn{visibility:hidden}
-.overlay{display:none;position:fixed;inset:0;background:#000a;z-index:29}.overlay.active{display:block}
-.sidebar{position:fixed;top:0;left:-290px;width:270px;height:100%;background:#111827;z-index:30;padding:22px;transition:left .3s;overflow-y:auto;border-right:1px solid var(--line)}
-.sidebar.open{left:0}.sidebar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.sidebar-header h2{margin:0;color:var(--purple);font-size:25px}.sidebar-close{background:none;border:0;color:white;font-size:32px;cursor:pointer}
-.sidebar a{display:block;color:#d5d9e5;text-decoration:none;padding:13px 10px;border-radius:8px;cursor:pointer}
-.sidebar a:hover{background:#252d42;color:white}
+header{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#101626;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+button{cursor:pointer}
+.header-btn{background:none;border:0;color:white;font-size:25px}
+.logo{color:var(--purple);font-size:26px;font-weight:900}
 main{max-width:1200px;margin:auto;padding:22px 18px}
 .total{text-align:center;padding:12px;border-bottom:1px solid var(--line);margin-bottom:24px}
-.total small{display:block;color:var(--muted);letter-spacing:2px}.total h1{margin:8px 0;font-size:32px}
-.section-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:17px}
-.section-heading h2{font-size:22px;margin:0}.post-count{color:var(--purple);font-size:12px}
+.total small{color:var(--muted);letter-spacing:2px}
+.total h1{font-size:32px;margin:8px}
+.heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.heading h2{margin:0}
+.count{color:var(--purple);font-size:12px}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 12px}
-.post{min-width:0;padding:8px;border:1px solid #222c3d;border-radius:10px;background:#111827;transition:transform .25s,border-color .25s}
-.post:hover{transform:translateY(-4px);border-color:#7661b7}
-.poster{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;border-radius:6px;background:#202a3b}
-.post h3{font-size:13px;margin:9px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.empty{grid-column:1/-1;text-align:center;padding:45px 15px;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
-.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin:32px 0;flex-wrap:wrap}
-.pagination button,.btn{padding:9px 13px;background:#171f30;color:white;border:1px solid #303a50;border-radius:7px;cursor:pointer}
-.pagination button.active,.btn.primary{background:var(--purple);border-color:var(--purple);color:#090d18;font-weight:bold}
-button:disabled{opacity:.4;cursor:not-allowed}
-footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-.modal{display:none;position:fixed;inset:0;background:#000b;z-index:60;align-items:center;justify-content:center;padding:16px}
-.modal.show{display:flex}.admin-card{width:min(620px,100%);max-height:90vh;overflow:auto;background:#111827;border:1px solid var(--line);border-radius:14px;padding:20px}
-.admin-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
-.admin-top h2{margin:0;color:var(--purple)}.close-x{background:none;border:0;color:white;font-size:27px;cursor:pointer}
-.field{display:block;margin:13px 0 6px;color:#d5d9e5;font-size:13px}
-input[type=email],input[type=password],input[type=text],input[type=file]{width:100%;padding:11px;background:#090d18;color:white;border:1px solid #35405a;border-radius:7px}
-input:focus{outline:1px solid var(--purple)}
-.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.notice{font-size:13px;color:var(--muted);line-height:1.5;margin:10px 0}
-.status{font-size:13px;min-height:18px;color:#c8baff;margin-top:10px}
-.admin-list{margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
-.admin-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #252e40}
-.admin-thumb{width:42px;height:58px;object-fit:cover;border-radius:4px;background:#202a3b}
-.admin-name{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px}
-.small-btn{padding:7px 9px;font-size:12px;background:#202a3b;color:white;border:1px solid #35405a;border-radius:6px;cursor:pointer}
-.small-btn.delete{color:#ff9cab;border-color:#713344}
-@media(max-width:400px){header{padding:0 10px;grid-template-columns:38px 1fr 38px}.logo{font-size:23px}.search-box{left:48px;right:9px;gap:5px}.search-box input{font-size:13px;padding:10px 8px}.search-close{width:27px;font-size:25px}main{padding:18px 10px}.grid{gap:10px 7px}.post{padding:5px}.post h3{font-size:11px}.admin-card{padding:15px}}
+.post{padding:8px;background:var(--panel);border:1px solid #222c3d;border-radius:10px;cursor:pointer;min-width:0}
+.post:hover{border-color:var(--purple);transform:translateY(-3px)}
+.poster{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:#202a3b}
+.post h3{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:8px 0}
+.category{font-size:11px;color:var(--muted)}
+.pagination{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:30px}
+.pagination button,.action{padding:9px 13px;background:#171f30;color:white;border:1px solid #303a50;border-radius:7px}
+.pagination .active,.primary{background:var(--purple)!important}
+footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var(--muted)}
+.sidebar{position:fixed;top:0;left:-290px;width:270px;height:100%;padding:22px;background:var(--panel);z-index:40;transition:.3s}
+.sidebar.open{left:0}
+.sidebar a{display:block;padding:13px;color:white;text-decoration:none;cursor:pointer}
+.overlay{display:none;position:fixed;inset:0;background:#000a;z-index:35}
+.overlay.active{display:block}
+.modal{display:none;position:fixed;inset:0;background:#000d;z-index:60;overflow:auto;padding:20px}
+.modal.show{display:block}
+.modal-content{max-width:850px;margin:25px auto;background:var(--panel);border:1px solid #35405a;border-radius:12px;padding:20px}
+.close{float:right;background:none;border:0;color:white;font-size:28px}
+.detail{display:grid;grid-template-columns:220px 1fr;gap:22px;margin-top:20px}
+.detail img{width:100%;border-radius:8px}
+.detail p{color:var(--muted);line-height:1.6}
+.admin{display:none;background:var(--panel);border:1px solid var(--line);padding:16px;border-radius:10px;margin:20px 0}
+.admin.show{display:block}
+.admin input{display:block;width:100%;padding:11px;margin:8px 0 15px;background:var(--bg);color:white;border:1px solid #35405a;border-radius:7px}
+.notice{color:var(--muted);font-size:13px}
+@media(max-width:600px){.grid{gap:9px 7px}.post{padding:5px}.post h3{font-size:11px}.detail{grid-template-columns:110px 1fr;gap:12px}}
 </style>
 </head>
 <body>
-<header id="mainHeader">
-  <button class="header-btn header-left" onclick="toggleMenu()" aria-label="Open menu">☰</button>
-  <div class="logo">TunLine</div>
-  <button class="header-btn header-right" id="searchBtn" onclick="toggleSearch()" aria-label="Open search">⌕</button>
-  <div class="search-box" id="searchBox">
-    <input id="searchInput" type="search" placeholder="Search titles..." oninput="searchPosts()">
-    <button class="search-close" onclick="closeSearch()" aria-label="Close search">&times;</button>
-  </div>
+
+<header>
+<button class="header-btn" onclick="menu()">☰</button>
+<div class="logo">TunLine</div>
+<button class="header-btn" onclick="searchToggle()">⌕</button>
 </header>
-<div class="overlay" id="overlay" onclick="closeMenu()"></div>
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-header"><h2>TunLine</h2><button class="sidebar-close" onclick="closeMenu()" aria-label="Close sidebar">&times;</button></div>
-  <a onclick="showAll()">⌂ Home</a>
-  <a onclick="openAdmin()">⚙ Admin Login</a>
+
+<div id="overlay" class="overlay" onclick="menu()"></div>
+<aside id="sidebar" class="sidebar">
+<h2 style="color:#9574ff">TunLine</h2>
+<a onclick="filter('All')">⌂ Home</a>
+<a onclick="filter('Movie')">🎬 Movies</a>
+<a onclick="filter('TV Series')">📺 TV Shows</a>
+<a onclick="filter('Web Series')">▶ Web Series</a>
+<a onclick="filter('Anime')">✦ Anime</a>
+<a onclick="filter('Animation')">🎨 Animation</a>
+<a onclick="filter('Documentary')">📚 Documentaries</a>
+<a onclick="filter('All')">▦ All Entries</a>
+<hr>
+<a onclick="openAdmin()">⚙ Admin Login</a>
 </aside>
 
 <main>
-  <section class="total"><small>TOTAL ENTRIES</small><h1 id="totalCount">0000</h1></section>
-  <section>
-    <div class="section-heading"><h2 id="sectionTitle">Trending</h2><span class="post-count" id="postCount">0 POSTS</span></div>
-    <div class="grid" id="postGrid"><div class="empty">Loading TunLine entries…</div></div>
-    <div class="pagination" id="pagination"></div>
-  </section>
-</main>
-<footer><strong>TunLine</strong><br><br>Your Universe of Entertainment.</footer>
-
-<div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-label="Admin panel">
-  <div class="admin-card">
-    <div class="admin-top"><h2>Admin Dashboard</h2><button class="close-x" onclick="closeAdmin()" aria-label="Close">&times;</button></div>
-    <section id="loginSection">
-      <p class="notice">Sign in with the single Admin account created in your Supabase project. Public registration is not available on this website.</p>
-      <label class="field" for="adminEmail">Admin email</label><input id="adminEmail" type="email" autocomplete="username" placeholder="you@example.com">
-      <label class="field" for="adminPassword">Password</label><input id="adminPassword" type="password" autocomplete="current-password" placeholder="Admin password">
-      <div class="form-actions"><button class="btn primary" onclick="signInAdmin()">Sign in</button></div>
-      <div class="status" id="loginStatus"></div>
-    </section>
-    <section id="dashboardSection" hidden>
-      <p class="notice" id="adminIdentity"></p>
-      <h3 id="formHeading">Add entry</h3>
-      <input type="hidden" id="editingId">
-      <label class="field" for="entryTitle">Title</label><input id="entryTitle" type="text" maxlength="160" placeholder="Enter title">
-      <label class="field" for="entryPoster">HD Poster</label><input id="entryPoster" type="file" accept="image/jpeg,image/png,image/webp">
-      <p class="notice">Use a JPG, PNG or WebP poster. Recommended portrait ratio: 2:3. Maximum upload size: 8 MB.</p>
-      <div class="form-actions">
-        <button class="btn primary" id="saveEntryBtn" onclick="saveEntry()">Add entry</button>
-        <button class="btn" onclick="resetEntryForm()">Clear</button>
-        <button class="btn" onclick="signOutAdmin()">Sign out</button>
-      </div>
-      <div class="status" id="dashboardStatus"></div>
-      <div class="admin-list"><h3>Manage entries</h3><div id="adminEntries">Loading…</div></div>
-    </section>
-  </div>
+<div id="searchArea" style="display:none;margin-bottom:18px">
+<input id="search" placeholder="Search titles..." oninput="render()" style="width:100%;padding:12px;background:#111827;color:white;border:1px solid #35405a;border-radius:8px">
 </div>
 
-<!-- Supabase client library -->
+<section class="total">
+<small>TOTAL ENTRIES</small>
+<h1 id="total">0000</h1>
+</section>
+
+<div class="heading">
+<h2 id="sectionTitle">Trending</h2>
+<span class="count" id="count">0 POSTS</span>
+</div>
+<div class="grid" id="grid"></div>
+<div class="pagination" id="pages"></div>
+
+<section class="admin" id="admin">
+<h2>Admin Panel</h2>
+<div id="login">
+<p class="notice">Sign in with your authorized Supabase Admin account.</p>
+<input id="email" type="email" placeholder="Admin email">
+<input id="password" type="password" placeholder="Password">
+<button class="action primary" onclick="login()">Sign in</button>
+</div>
+<div id="upload" style="display:none">
+<label>Title</label>
+<input id="title" placeholder="Enter title">
+<label>HD Poster</label>
+<input id="poster" type="file" accept="image/jpeg,image/png,image/webp">
+<button class="action primary" onclick="addEntry()">Upload poster</button>
+<button class="action" onclick="logout()">Sign out</button>
+<p id="message" class="notice"></p>
+</div>
+</section>
+</main>
+
+<footer><b>TunLine</b><br><br>Your Universe of Entertainment.</footer>
+
+<div class="modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
+<div class="modal-content">
+<button class="close" onclick="closeDetail()">×</button>
+<div id="detailContent"></div>
+</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Replace these two values with your Supabase Project URL and anon/public key. -->
 <script>
-const SUPABASE_URL = "https://ogneisklckxljckatcro.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_fFlxrkqt5Let8lu0W3L5Ew_yoJzT_69";
-const STORAGE_BUCKET = "posters";
-const PAGE_SIZE = 15;
+// PASTE YOUR SUPABASE PROJECT URL AND PUBLISHABLE KEY HERE
+const SUPABASE_URL="YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_KEY="YOUR_SUPABASE_ANON_PUBLIC_KEY";
 
-let supabaseClient = null;
-let allPosts = [];
-let currentPage = 1;
-let searchQuery = "";
-let adminUser = null;
+// OPTIONAL: PASTE YOUR TMDB API KEY HERE FOR AUTOMATIC DETAILS
+const TMDB_KEY="YOUR_TMDB_API_KEY";
 
-function configured(){
-  return SUPABASE_URL.startsWith("https://") &&
-         !SUPABASE_URL.includes("YOUR_") &&
-         SUPABASE_ANON_KEY.length > 30 &&
-         !SUPABASE_ANON_KEY.includes("YOUR_");
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let entries=[],page=1,category="All",perPage=15;
+
+function menu(){
+ document.getElementById("sidebar").classList.toggle("open");
+ document.getElementById("overlay").classList.toggle("active");
 }
-function initClient(){
-  if(supabaseClient) return true;
-  if(!configured()) return false;
-  if(!window.supabase){showGridMessage("Supabase library could not load. Check your internet connection.");return false;}
-  supabaseClient = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  return true;
+function searchToggle(){
+ const a=document.getElementById("searchArea");
+ a.style.display=a.style.display==="none"?"block":"none";
 }
-function showGridMessage(message){
-  document.getElementById("postGrid").innerHTML="";
-  const el=document.createElement("div");el.className="empty";el.textContent=message;
-  document.getElementById("postGrid").appendChild(el);
-  document.getElementById("postCount").textContent="0 POSTS";
+function filter(c){
+ category=c;page=1;
+ document.getElementById("sectionTitle").textContent=c==="All"?"Trending":c;
+ menu();render();
 }
-function toggleMenu(){
-  document.getElementById("sidebar").classList.toggle("open");
-  document.getElementById("overlay").classList.toggle("active");
+function publicPoster(path){
+ if(!path)return "";
+ if(path.startsWith("http"))return path;
+ return db.storage.from("posters").getPublicUrl(path).data.publicUrl;
 }
-function closeMenu(){
-  document.getElementById("sidebar").classList.remove("open");
-  document.getElementById("overlay").classList.remove("active");
+async function load(){
+ const {data,error}=await db.from("entries")
+ .select("*").order("created_at",{ascending:false});
+ if(error){document.getElementById("grid").textContent=error.message;return;}
+ entries=data||[];render();
 }
-function toggleSearch(){
-  const box=document.getElementById("searchBox"),header=document.getElementById("mainHeader");
-  if(box.classList.contains("active")) closeSearch();
-  else{box.classList.add("active");header.classList.add("search-open");document.getElementById("searchInput").focus();}
+function render(){
+ const q=(document.getElementById("search").value||"").toLowerCase();
+ let list=entries.filter(x=>
+ (category==="All"||x.category===category)&&
+ x.title.toLowerCase().includes(q));
+ let totalPages=Math.max(1,Math.ceil(list.length/perPage));
+ page=Math.min(page,totalPages);
+ let visible=list.slice((page-1)*perPage,page*perPage);
+ document.getElementById("total").textContent=String(entries.length).padStart(4,"0");
+ document.getElementById("count").textContent=visible.length+" POSTS";
+ const grid=document.getElementById("grid");grid.innerHTML="";
+ if(!visible.length)grid.innerHTML='<p class="notice">No entries yet. Admin can add the first poster.</p>';
+ visible.forEach(p=>{
+ const card=document.createElement("article");card.className="post";
+ const img=document.createElement("img");img.className="poster";
+ img.src=publicPoster(p.poster_path);img.alt=p.title;
+ const h=document.createElement("h3");h.textContent=p.title;
+ const cat=document.createElement("div");cat.className="category";cat.textContent=p.category||"Entertainment";
+ card.append(img,h,cat);card.onclick=()=>details(p);grid.append(card);
+ });
+ const pages=document.getElementById("pages");pages.innerHTML="";
+ if(totalPages>1){
+ for(let i=1;i<=totalPages;i++){
+ const b=document.createElement("button");b.textContent=i;
+ if(i===page)b.className="active";
+ b.onclick=()=>{page=i;render();};pages.append(b);
+ }}
 }
-function closeSearch(){
-  document.getElementById("searchBox").classList.remove("active");
-  document.getElementById("mainHeader").classList.remove("search-open");
-  document.getElementById("searchInput").value="";
-  searchQuery="";currentPage=1;renderPosts();
+async function details(p){
+ const modal=document.getElementById("detailModal");
+ modal.classList.add("show");
+ const area=document.getElementById("detailContent");
+ area.innerHTML="<p>Loading details…</p>";
+ let d=null;
+ if(TMDB_KEY&&!TMDB_KEY.includes("YOUR_")){
+ try{
+ const s=await fetch("https://api.themoviedb.org/3/search/multi?query="+encodeURIComponent(p.title)+"&api_key="+TMDB_KEY);
+ const j=await s.json();
+ const hit=(j.results||[]).find(x=>x.media_type==="movie"||x.media_type==="tv");
+ if(hit){
+ const r=await fetch(`https://api.themoviedb.org/3/${hit.media_type}/${hit.id}?append_to_response=credits,videos&api_key=${TMDB_KEY}`);
+ d=await r.json();d.kind=hit.media_type;
+ }
+ }catch(e){console.log(e);}
+ }
+ const year=d?(d.release_date||d.first_air_date||"").slice(0,4):"";
+ const genres=d?.genres?.map(x=>x.name).join(", ")||"";
+ const cast=d?.credits?.cast?.slice(0,8).map(x=>x.name).join(", ")||"";
+ const trailer=d?.videos?.results?.find(x=>x.site==="YouTube"&&x.type==="Trailer");
+ const overview=d?.overview||"No external details found yet. Add a TMDB API key to enable automatic information.";
+ area.innerHTML=`
+ <div class="detail">
+ <img src="${publicPoster(p.poster_path)}">
+ <div>
+ <h2>${d?.title||d?.name||p.title}</h2>
+ <p>${year} ${d?.vote_average?" · Rating "+d.vote_average.toFixed(1):""}</p>
+ <p>${overview}</p>
+ ${genres?`<h3>Genres</h3><p>${genres}</p>`:""}
+ ${cast?`<h3>Cast</h3><p>${cast}</p>`:""}
+ ${trailer?`<p><a style="color:#bbaaff" target="_blank" href="https://youtube.com/watch?v=${trailer.key}">Watch trailer</a></p>`:""}
+ </div></div>`;
 }
-function searchPosts(){searchQuery=document.getElementById("searchInput").value.toLowerCase().trim();currentPage=1;renderPosts();}
-function showAll(){closeMenu();closeSearch();document.getElementById("sectionTitle").textContent="Trending";}
-function publicPosterUrl(path){
-  return supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+function closeDetail(){document.getElementById("detailModal").classList.remove("show");}
+function openAdmin(){menu();document.getElementById("admin").classList.add("show");document.getElementById("admin").scrollIntoView({behavior:"smooth"});}
+async function login(){
+ const {data,error}=await db.auth.signInWithPassword({
+ email:document.getElementById("email").value,
+ password:document.getElementById("password").value
+ });
+ if(error){document.getElementById("message").textContent=error.message;return;}
+ if(data.user.app_metadata.role!=="admin"){
+ await db.auth.signOut();
+ document.getElementById("message").textContent="This account is not authorized as Admin.";
+ return;
+ }
+ document.getElementById("login").style.display="none";
+ document.getElementById("upload").style.display="block";
 }
-async function loadPosts(){
-  if(!supabaseClient){showGridMessage("Website setup is not complete yet. Add your Supabase URL and anon key in index.html.");return;}
-  const {data,error}=await supabaseClient.from("entries").select("id,title,poster_path,created_at").order("created_at",{ascending:false});
-  if(error){console.error(error);showGridMessage("Could not load entries. Check the Supabase setup and database policies.");return;}
-  allPosts=data||[];
-  document.getElementById("totalCount").textContent=String(allPosts.length).padStart(4,"0");
-  renderPosts();
+async function addEntry(){
+ const title=document.getElementById("title").value.trim();
+ const file=document.getElementById("poster").files[0];
+ const msg=document.getElementById("message");
+ if(!title||!file){msg.textContent="Enter a title and choose a poster.";return;}
+ if(file.size>8*1024*1024){msg.textContent="Poster must be under 8 MB.";return;}
+ const ext=file.name.split(".").pop().toLowerCase();
+ const path=crypto.randomUUID()+"."+ext;
+ msg.textContent="Uploading…";
+ const up=await db.storage.from("posters").upload(path,file,{contentType:file.type});
+ if(up.error){msg.textContent=up.error.message;return;}
+ const ins=await db.from("entries").insert({title,poster_path:path});
+ if(ins.error){msg.textContent=ins.error.message;return;}
+ msg.textContent="Poster added successfully!";
+ document.getElementById("title").value="";
+ document.getElementById("poster").value="";
+ await load();
 }
-function renderPosts(){
-  const filtered=allPosts.filter(p=>p.title.toLowerCase().includes(searchQuery));
-  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
-  currentPage=Math.min(currentPage,pages);
-  const visible=filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
-  const grid=document.getElementById("postGrid");grid.innerHTML="";
-  if(!visible.length){
-    const empty=document.createElement("div");empty.className="empty";
-    empty.textContent=searchQuery?"No titles match your search.":"No entries yet. Please check back later.";
-    grid.appendChild(empty);
-  }else{
-    visible.forEach(post=>{
-      const card=document.createElement("article");card.className="post";
-      const img=document.createElement("img");img.className="poster";img.src=publicPosterUrl(post.poster_path);img.alt=post.title;img.loading="lazy";
-      img.onerror=()=>{img.removeAttribute("src");};
-      const title=document.createElement("h3");title.textContent=post.title;
-      card.append(img,title);grid.appendChild(card);
-    });
-  }
-  document.getElementById("postCount").textContent=`${visible.length} POSTS`;
-  renderPagination(pages);
+async function logout(){
+ await db.auth.signOut();
+ document.getElementById("upload").style.display="none";
+ document.getElementById("login").style.display="block";
 }
-function renderPagination(totalPages){
-  const box=document.getElementById("pagination");box.innerHTML="";
-  if(totalPages<=1)return;
-  const add=(label,page,disabled,active)=>{
-    const b=document.createElement("button");b.textContent=label;b.disabled=disabled;if(active)b.classList.add("active");
-    b.onclick=()=>{currentPage=page;renderPosts();window.scrollTo({top:0,behavior:"smooth"});};box.appendChild(b);
-  };
-  add("‹",currentPage-1,currentPage===1,false);
-  for(let i=1;i<=totalPages;i++) add(String(i),i,false,i===currentPage);
-  add("›",currentPage+1,currentPage===totalPages,false);
-}
-function openAdmin(){closeMenu();document.getElementById("adminModal").classList.add("show");refreshAdminState();}
-function closeAdmin(){document.getElementById("adminModal").classList.remove("show");}
-function setStatus(id,msg){document.getElementById(id).textContent=msg;}
-async function refreshAdminState(){
-  if(!supabaseClient){setStatus("loginStatus","Complete the Supabase setup first.");return;}
-  const {data:{session}}=await supabaseClient.auth.getSession();
-  if(session && session.user){
-    const role=session.user.app_metadata?.role;
-    if(role==="admin"){adminUser=session.user;showDashboard();}
-    else{await supabaseClient.auth.signOut();adminUser=null;showLogin();setStatus("loginStatus","This account is not authorized as the TunLine Admin.");}
-  }else{showLogin();}
-}
-function showLogin(){document.getElementById("loginSection").hidden=false;document.getElementById("dashboardSection").hidden=true;}
-function showDashboard(){
-  document.getElementById("loginSection").hidden=true;document.getElementById("dashboardSection").hidden=false;
-  document.getElementById("adminIdentity").textContent="Signed in as "+(adminUser?.email||"Admin");
-  loadAdminEntries();
-}
-async function signInAdmin(){
-  if(!initClient()&&!supabaseClient)return;
-  const email=document.getElementById("adminEmail").value.trim(),password=document.getElementById("adminPassword").value;
-  if(!email||!password){setStatus("loginStatus","Enter your email and password.");return;}
-  setStatus("loginStatus","Signing in…");
-  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-  if(error){setStatus("loginStatus",error.message);return;}
-  if(data.user?.app_metadata?.role!=="admin"){
-    await supabaseClient.auth.signOut();setStatus("loginStatus","This account is not authorized as the TunLine Admin.");return;
-  }
-  adminUser=data.user;setStatus("loginStatus","");showDashboard();
-}
-async function signOutAdmin(){
-  await supabaseClient.auth.signOut();adminUser=null;resetEntryForm();showLogin();setStatus("loginStatus","You have signed out.");
-}
-function resetEntryForm(){
-  document.getElementById("editingId").value="";
-  document.getElementById("entryTitle").value="";
-  document.getElementById("entryPoster").value="";
-  document.getElementById("formHeading").textContent="Add entry";
-  document.getElementById("saveEntryBtn").textContent="Add entry";
-  setStatus("dashboardStatus","");
-}
-async function saveEntry(){
-  const title=document.getElementById("entryTitle").value.trim();
-  const file=document.getElementById("entryPoster").files[0];
-  const editingId=document.getElementById("editingId").value;
-  if(!title){setStatus("dashboardStatus","Please enter a title.");return;}
-  if(!editingId&&!file){setStatus("dashboardStatus","Please select an HD poster.");return;}
-  if(file && !["image/jpeg","image/png","image/webp"].includes(file.type)){setStatus("dashboardStatus","Choose a JPG, PNG or WebP image.");return;}
-  if(file && file.size>8*1024*1024){setStatus("dashboardStatus","Poster must be 8 MB or smaller.");return;}
-  const saveBtn=document.getElementById("saveEntryBtn");saveBtn.disabled=true;setStatus("dashboardStatus","Saving…");
-  try{
-    let posterPath=null,oldPath=null;
-    if(editingId){
-      const old=allPosts.find(p=>p.id===editingId);oldPath=old?.poster_path||null;
-    }
-    if(file){
-      const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
-      posterPath=`${crypto.randomUUID()}.${ext}`;
-      const {error:uploadError}=await supabaseClient.storage.from(STORAGE_BUCKET).upload(posterPath,file,{contentType:file.type,upsert:false});
-      if(uploadError)throw uploadError;
-    }
-    let result;
-    if(editingId){
-      const update={title};if(posterPath)update.poster_path=posterPath;
-      result=await supabaseClient.from("entries").update(update).eq("id",editingId).select().single();
-    }else{
-      result=await supabaseClient.from("entries").insert({title,poster_path:posterPath}).select().single();
-    }
-    if(result.error){
-      if(posterPath)await supabaseClient.storage.from(STORAGE_BUCKET).remove([posterPath]);
-      throw result.error;
-    }
-    if(posterPath&&oldPath)await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldPath]);
-    resetEntryForm();setStatus("dashboardStatus","Entry saved successfully.");
-    await loadPosts();await loadAdminEntries();
-  }catch(e){console.error(e);setStatus("dashboardStatus",e.message||"Could not save entry.");}
-  finally{saveBtn.disabled=false;}
-}
-async function loadAdminEntries(){
-  const box=document.getElementById("adminEntries");box.textContent="Loading…";
-  const {data,error}=await supabaseClient.from("entries").select("id,title,poster_path,created_at").order("created_at",{ascending:false});
-  if(error){box.textContent=error.message;return;}
-  if(!data.length){box.textContent="No entries yet.";return;}
-  box.innerHTML="";
-  data.forEach(post=>{
-    const row=document.createElement("div");row.className="admin-row";
-    const img=document.createElement("img");img.className="admin-thumb";img.src=publicPosterUrl(post.poster_path);img.alt="";
-    const name=document.createElement("div");name.className="admin-name";name.textContent=post.title;
-    const edit=document.createElement("button");edit.className="small-btn";edit.textContent="Edit";edit.onclick=()=>editEntry(post);
-    const del=document.createElement("button");del.className="small-btn delete";del.textContent="Delete";del.onclick=()=>deleteEntry(post);
-    row.append(img,name,edit,del);box.appendChild(row);
-  });
-}
-function editEntry(post){
-  document.getElementById("editingId").value=post.id;
-  document.getElementById("entryTitle").value=post.title;
-  document.getElementById("entryPoster").value="";
-  document.getElementById("formHeading").textContent="Edit entry";
-  document.getElementById("saveEntryBtn").textContent="Save changes";
-  setStatus("dashboardStatus","Choose a new poster only if you want to replace the current one.");
-  document.getElementById("entryTitle").focus();
-}
-async function deleteEntry(post){
-  if(!confirm(`Delete "${post.title}"? This cannot be undone.`))return;
-  setStatus("dashboardStatus","Deleting…");
-  const {error}=await supabaseClient.from("entries").delete().eq("id",post.id);
-  if(error){setStatus("dashboardStatus",error.message);return;}
-  const {error:storageError}=await supabaseClient.storage.from(STORAGE_BUCKET).remove([post.poster_path]);
-  if(storageError)console.warn("Entry deleted, but poster cleanup failed:",storageError.message);
-  if(document.getElementById("editingId").value===post.id)resetEntryForm();
-  setStatus("dashboardStatus","Entry deleted.");await loadPosts();await loadAdminEntries();
-}
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeSearch();closeMenu();closeAdmin();}});
-document.getElementById("adminModal").addEventListener("click",e=>{if(e.target.id==="adminModal")closeAdmin();});
-(async function start(){
-  if(!initClient()){showGridMessage("TunLine is ready for setup. Add your Supabase Project URL and anon/public key in this file, then publish it.");return;}
-  await loadPosts();
-  supabaseClient.auth.onAuthStateChange((_event,session)=>{
-    if(!session){adminUser=null;}
-  });
-})();
+load();
 </script>
 </body>
 </html>
