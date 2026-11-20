@@ -53,6 +53,11 @@ footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var
 .status{color:#bbaaff;font-size:13px}
 .danger{background:#692b3b!important}
 a{color:#c1b2ff}
+.detail-description{color:var(--muted);line-height:1.8;font-size:15px}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.meta-tag{background:#202a3d;border:1px solid #35405a;border-radius:20px;padding:6px 10px;font-size:12px;color:#ddd}
+.source-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px}
+.source-links a{font-size:12px;text-decoration:none}
 @media(max-width:600px){
  .grid{gap:9px 7px}
  .post{padding:5px}
@@ -155,7 +160,7 @@ Your Universe of Entertainment.
 <script>
 "use strict";
 
-// EXISTING SUPABASE PROJECT
+// YOUR EXISTING SUPABASE PROJECT
 const SUPABASE_URL="https://ogneisklckxljckatcro.supabase.co";
 const SUPABASE_KEY="sb_publishable_fFlxrkqt5Let8lu0W3L5Ew_yoJzT_69";
 
@@ -166,16 +171,11 @@ let page=1;
 let category="All";
 let isAdmin=false;
 const perPage=15;
-
 const $=id=>document.getElementById(id);
 
 function escapeHTML(value){
  return String(value??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;",
-  "<":"&lt;",
-  ">":"&gt;",
-  '"':"&quot;",
-  "'":"&#39;"
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
  }[c]));
 }
 
@@ -186,7 +186,6 @@ function safeURL(value){
  }catch(e){return "";}
 }
 
-// MENU
 function setMenu(open){
  $("sidebar").classList.toggle("open",open);
  $("overlay").classList.toggle("active",open);
@@ -195,10 +194,8 @@ function setMenu(open){
 $("menuBtn").addEventListener("click",()=>{
  setMenu(!$("sidebar").classList.contains("open"));
 });
-
 $("overlay").addEventListener("click",()=>setMenu(false));
 
-// SEARCH
 $("searchBtn").addEventListener("click",()=>{
  const area=$("searchArea");
  area.style.display=area.style.display==="none"?"block":"none";
@@ -210,7 +207,6 @@ $("search").addEventListener("input",()=>{
  render();
 });
 
-// CATEGORY FILTER
 document.querySelectorAll("[data-filter]").forEach(link=>{
  link.addEventListener("click",()=>{
   category=link.dataset.filter;
@@ -221,21 +217,18 @@ document.querySelectorAll("[data-filter]").forEach(link=>{
  });
 });
 
-// ADMIN PANEL
 $("adminLink").addEventListener("click",()=>{
  setMenu(false);
  $("admin").classList.add("show");
  $("admin").scrollIntoView({behavior:"smooth"});
 });
 
-// POSTER URL
 function publicPoster(path){
  if(!path)return "";
  if(path.startsWith("http"))return path;
  return db.storage.from("posters").getPublicUrl(path).data.publicUrl;
 }
 
-// LOAD ENTRIES
 async function load(){
  $("grid").textContent="Loading entries…";
 
@@ -252,7 +245,6 @@ async function load(){
  render();
 }
 
-// DISPLAY ENTRIES
 function render(){
  const q=($("search").value||"").toLowerCase();
 
@@ -263,7 +255,6 @@ function render(){
 
  const totalPages=Math.max(1,Math.ceil(list.length/perPage));
  page=Math.min(page,totalPages);
-
  const visible=list.slice((page-1)*perPage,page*perPage);
 
  $("total").textContent=String(entries.length).padStart(4,"0");
@@ -306,60 +297,95 @@ function render(){
    const b=document.createElement("button");
    b.textContent=i;
    if(i===page)b.className="active";
-   b.addEventListener("click",()=>{
-    page=i;
-    render();
-   });
+   b.addEventListener("click",()=>{page=i;render();});
    pages.append(b);
   }
  }
 }
 
-// ---------- FREE API HELPERS ----------
+// ---------- API HELPERS ----------
 
 async function fetchJSON(url,options={}){
  const response=await fetch(url,options);
- if(!response.ok){
-  throw new Error("HTTP "+response.status);
- }
+ if(!response.ok)throw new Error("HTTP "+response.status);
  return response.json();
 }
 
-// TVMAZE
+function cleanText(value){
+ return String(value||"")
+  .replace(/<[^>]*>/g," ")
+  .replace(/&nbsp;/g," ")
+  .replace(/&amp;/g,"&")
+  .replace(/\s+/g," ")
+  .trim();
+}
+
+function normalise(value){
+ return String(value||"")
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g,"");
+}
+
+function titleMatchScore(candidate,search){
+ const a=normalise(candidate);
+ const b=normalise(search);
+ if(!a||!b)return 0;
+ if(a===b)return 100;
+ if(a.includes(b)||b.includes(a))return 75;
+ return 0;
+}
+
+// TVMAZE: TV shows and web series
 async function searchTVmaze(title){
  const data=await fetchJSON(
   "https://api.tvmaze.com/search/shows?q="+encodeURIComponent(title)
  );
 
- return (data||[]).slice(0,3).map(item=>({
-  source:"TVmaze",
-  title:item.show.name,
-  year:(item.show.premiered||"").slice(0,4),
-  description:(item.show.summary||"").replace(/<[^>]*>/g,""),
-  genres:(item.show.genres||[]).join(", "),
-  rating:item.show.rating?.average||"",
-  link:item.show.url
- }));
+ const ranked=(data||[]).map(x=>({
+  item:x.show,
+  score:titleMatchScore(x.show.name,title)
+ })).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+ if(!ranked.length)return null;
+ const s=ranked[0].item;
+
+ return {
+  title:s.name,
+  year:(s.premiered||"").slice(0,4),
+  description:cleanText(s.summary),
+  genres:(s.genres||[]).join(", "),
+  rating:s.rating?.average||"",
+  link:s.url,
+  source:"TVmaze"
+ };
 }
 
-// JIKAN / MYANIMELIST
+// JIKAN: Anime
 async function searchJikan(title){
  const data=await fetchJSON(
-  "https://api.jikan.moe/v4/anime?q="+encodeURIComponent(title)+"&limit=3"
+  "https://api.jikan.moe/v4/anime?q="+encodeURIComponent(title)+"&limit=10"
  );
 
- return (data.data||[]).map(item=>({
-  source:"Jikan / MyAnimeList",
-  title:item.title,
-  year:item.year||item.aired?.prop?.from?.year||"",
-  description:item.synopsis||"No description available.",
-  genres:(item.genres||[]).map(g=>g.name).join(", "),
-  rating:item.score||"",
-  link:item.url
- }));
+ const ranked=(data.data||[]).map(x=>{
+  const names=[x.title,x.title_english,x.title_japanese,...(x.titles||[]).map(t=>t.title)];
+  return {item:x,score:Math.max(...names.map(n=>titleMatchScore(n,title)))};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+ if(!ranked.length)return null;
+ const a=ranked[0].item;
+
+ return {
+  title:a.title_english||a.title,
+  year:a.year||a.aired?.prop?.from?.year||"",
+  description:cleanText(a.synopsis),
+  genres:(a.genres||[]).map(g=>g.name).join(", "),
+  rating:a.score||"",
+  link:a.url,
+  source:"MyAnimeList / Jikan"
+ };
 }
 
-// ANILIST
+// ANILIST: Anime
 async function searchAniList(title){
  const query=`
  query ($search:String) {
@@ -379,88 +405,159 @@ async function searchAniList(title){
    "Content-Type":"application/json",
    "Accept":"application/json"
   },
-  body:JSON.stringify({
-   query,
-   variables:{search:title}
-  })
+  body:JSON.stringify({query,variables:{search:title}})
  });
 
- const item=data.data?.Media;
- if(!item)return [];
+ const a=data.data?.Media;
+ if(!a)return null;
 
- return [{
-  source:"AniList",
-  title:item.title?.english||item.title?.romaji||title,
-  year:item.seasonYear||"",
-  description:(item.description||"").replace(/<[^>]*>/g," "),
-  genres:(item.genres||[]).join(", "),
-  rating:item.averageScore?item.averageScore+"/100":"",
-  link:item.siteUrl
- }];
+ const candidate=a.title?.english||a.title?.romaji||"";
+ if(titleMatchScore(candidate,title)<75)return null;
+
+ return {
+  title:candidate,
+  year:a.seasonYear||"",
+  description:cleanText(a.description),
+  genres:(a.genres||[]).join(", "),
+  rating:a.averageScore||"",
+  link:a.siteUrl,
+  source:"AniList"
+ };
 }
 
-// WIKIDATA
-async function searchWikidata(title){
- const url="https://www.wikidata.org/w/api.php?action=wbsearchentities&search="+
+// WIKIPEDIA: General information for movies, animation and documentaries
+async function searchWikipedia(title){
+ const search=await fetchJSON(
+  "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch="+
   encodeURIComponent(title)+
-  "&language=en&format=json&origin=*";
+  "&format=json&origin=*&srlimit=8"
+ );
 
- const data=await fetchJSON(url);
+ const results=search.query?.search||[];
+ const ranked=results.map(x=>({
+  item:x,
+  score:titleMatchScore(x.title,title)
+ })).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
 
- return (data.search||[]).slice(0,3).map(item=>({
-  source:"Wikidata",
-  title:item.label||title,
+ if(!ranked.length)return null;
+
+ const pageTitle=ranked[0].item.title;
+ const summary=await fetchJSON(
+  "https://en.wikipedia.org/api/rest_v1/page/summary/"+
+  encodeURIComponent(pageTitle)
+ );
+
+ if(summary.type==="disambiguation")return null;
+
+ return {
+  title:summary.title||pageTitle,
   year:"",
-  description:item.description||"No description available.",
+  description:cleanText(summary.extract),
   genres:"",
   rating:"",
-  link:"https://www.wikidata.org/wiki/"+item.id
- }));
+  link:summary.content_urls?.desktop?.page||
+       "https://en.wikipedia.org/wiki/"+encodeURIComponent(pageTitle.replace(/ /g,"_")),
+  source:"Wikipedia"
+ };
 }
 
-// RESULT CARD
-function resultHTML(item){
- const link=safeURL(item.link);
+// WIKIDATA: Additional source link and description
+async function searchWikidata(title){
+ const data=await fetchJSON(
+  "https://www.wikidata.org/w/api.php?action=wbsearchentities&search="+
+  encodeURIComponent(title)+
+  "&language=en&format=json&origin=*"
+ );
 
- return `
- <article class="result">
-  <div class="source">${escapeHTML(item.source)}</div>
-  <h3>${escapeHTML(item.title)}</h3>
-  <p>
-   ${escapeHTML(item.year||"")}
-   ${item.rating?" · Rating: "+escapeHTML(item.rating):""}
-  </p>
-  <p>${escapeHTML(item.description||"No description available.")}</p>
-  ${item.genres?`<p><b>Genres:</b> ${escapeHTML(item.genres)}</p>`:""}
-  ${link?`<p><a href="${escapeHTML(link)}" target="_blank" rel="noopener">View source details ↗</a></p>`:""}
- </article>`;
+ const results=data.search||[];
+ const ranked=results.map(x=>({
+  item:x,
+  score:titleMatchScore(x.label,title)
+ })).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+ if(!ranked.length)return null;
+ const item=ranked[0].item;
+
+ return {
+  title:item.label||title,
+  description:cleanText(item.description),
+  link:"https://www.wikidata.org/wiki/"+item.id,
+  source:"Wikidata"
+ };
 }
 
-// ---------- POSTER DETAILS ----------
+// ---------- COMBINE RESULTS INTO ONE PAGE ----------
+
+async function getCombinedInfo(p){
+ const type=p.category||"";
+ const jobs=[];
+
+ if(type==="Anime"){
+  jobs.push(searchJikan(p.title));
+  jobs.push(searchAniList(p.title));
+  jobs.push(searchWikipedia(p.title));
+ }else if(type==="TV Series"||type==="Web Series"){
+  jobs.push(searchTVmaze(p.title));
+  jobs.push(searchWikipedia(p.title));
+ }else{
+  jobs.push(searchWikipedia(p.title));
+  jobs.push(searchWikidata(p.title));
+ }
+
+ const settled=await Promise.allSettled(jobs);
+ return settled
+  .filter(x=>x.status==="fulfilled"&&x.value)
+  .map(x=>x.value);
+}
+
+function chooseBest(results,p){
+ if(!results.length)return null;
+
+ const type=p.category||"";
+ let preferred=[];
+
+ if(type==="Anime"){
+  preferred=["MyAnimeList / Jikan","AniList","Wikipedia"];
+ }else if(type==="TV Series"||type==="Web Series"){
+  preferred=["TVmaze","Wikipedia"];
+ }else{
+  preferred=["Wikipedia","Wikidata"];
+ }
+
+ for(const source of preferred){
+  const match=results.find(x=>x.source===source&&x.description&&x.description.length>40);
+  if(match)return match;
+ }
+
+ return results.find(x=>x.description)||results[0];
+}
+
+function uniqueValues(values){
+ return [...new Set(values.filter(Boolean).map(x=>String(x).trim()).filter(Boolean))];
+}
 
 async function details(p){
  const modal=$("detailModal");
  const area=$("detailContent");
-
  modal.classList.add("show");
 
- const poster=escapeHTML(publicPoster(p.poster_path));
+ const poster=safeURL(publicPoster(p.poster_path));
 
  area.innerHTML=`
- <div class="detail">
-  <img src="${poster}" alt="${escapeHTML(p.title)}">
-  <div>
-   <h2>${escapeHTML(p.title)}</h2>
-   <p>${escapeHTML(p.category||"Entertainment")}</p>
-   ${isAdmin?`
-    <button class="action" id="editEntryBtn">Edit entry</button>
-    <button class="action danger" id="deleteEntryBtn">Delete entry</button>
-   `:""}
+  <div class="detail">
+   <img src="${escapeHTML(poster)}" alt="${escapeHTML(p.title)}">
+   <div>
+    <h2>${escapeHTML(p.title)}</h2>
+    <p>${escapeHTML(p.category||"Entertainment")}</p>
+    ${isAdmin?`
+     <button class="action" id="editEntryBtn">Edit entry</button>
+     <button class="action danger" id="deleteEntryBtn">Delete entry</button>
+    `:""}
+   </div>
   </div>
- </div>
- <h3>Information from free databases</h3>
- <p id="fetchStatus" class="status">Starting searches...</p>
- <div id="externalResults"></div>
+  <h3>About this title</h3>
+  <p id="detailStatus" class="status">Finding information...</p>
+  <div id="combinedInfo"></div>
  `;
 
  if(isAdmin){
@@ -468,79 +565,75 @@ async function details(p){
   $("deleteEntryBtn").addEventListener("click",()=>deleteEntry(p));
  }
 
- const sources=[
-  {name:"TVmaze",run:()=>searchTVmaze(p.title)},
-  {name:"Jikan",run:()=>searchJikan(p.title)},
-  {name:"AniList",run:()=>searchAniList(p.title)},
-  {name:"Wikidata",run:()=>searchWikidata(p.title)}
- ];
+ const status=$("detailStatus");
+ const output=$("combinedInfo");
 
- const resultArea=$("externalResults");
- const status=$("fetchStatus");
- let found=0;
- let completed=0;
- let failures=[];
+ try{
+  const results=await getCombinedInfo(p);
 
- resultArea.innerHTML="";
+  // Do not update a different poster's page if the user changed it.
+  if(!$("detailModal").classList.contains("show"))return;
 
- // Run sources independently. A failed source won't stop other sources.
- const jobs=sources.map(async source=>{
-  try{
-   status.textContent="Searching "+source.name+"...";
-
-   const controller=new AbortController();
-   const timeout=setTimeout(()=>controller.abort(),15000);
-
-   try{
-    const results=await Promise.race([
-     source.run(),
-     new Promise((_,reject)=>{
-      controller.signal.addEventListener("abort",()=>reject(new Error("Request timed out")));
-     })
-    ]);
-
-    if(results&&results.length){
-     found+=results.length;
-     resultArea.insertAdjacentHTML(
-      "beforeend",
-      results.map(resultHTML).join("")
-     );
-    }else{
-     resultArea.insertAdjacentHTML(
-      "beforeend",
-      `<p class="notice">${escapeHTML(source.name)}: No matching results.</p>`
-     );
-    }
-   }finally{
-    clearTimeout(timeout);
-   }
-  }catch(error){
-   failures.push(source.name+": "+error.message);
-   resultArea.insertAdjacentHTML(
-    "beforeend",
-    `<p class="notice">${escapeHTML(source.name)} unavailable: ${escapeHTML(error.message)}</p>`
-   );
-  }finally{
-   completed++;
-   status.textContent="Checked "+completed+" of "+sources.length+" databases. Found "+found+" results.";
+  if(!results.length){
+   status.textContent="No matching information was found.";
+   output.innerHTML=`
+    <p class="detail-description">
+     We couldn't find reliable information for this title right now.
+     Please check the title spelling or try again later.
+    </p>`;
+   return;
   }
- });
 
- await Promise.allSettled(jobs);
+  const best=chooseBest(results,p);
+  const descriptions=results
+   .filter(x=>x.description&&x.description.length>40)
+   .sort((a,b)=>b.description.length-a.description.length);
 
- if(found===0){
-  resultArea.insertAdjacentHTML(
-   "afterbegin",
-   '<p class="notice">No matching external information was found. Check the title spelling or try again later.</p>'
-  );
+  // Use one strong description, not several separate search-result cards.
+  const description=best?.description||
+   descriptions[0]?.description||
+   "No description is currently available.";
+
+  const allGenres=uniqueValues(results.flatMap(x=>
+   (x.genres||"").split(",")
+  ));
+
+  const year=results.find(x=>x.year)?.year||"";
+  const rating=results.find(x=>x.rating)?.rating||"";
+
+  const sourceLinks=results.map(x=>{
+   const url=safeURL(x.link);
+   if(!url)return "";
+   return `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(x.source)}</a>`;
+  }).filter(Boolean);
+
+  output.innerHTML=`
+   <div class="detail-meta">
+    <span class="meta-tag">${escapeHTML(p.category||"Entertainment")}</span>
+    ${year?`<span class="meta-tag">${escapeHTML(year)}</span>`:""}
+    ${rating?`<span class="meta-tag">Rating: ${escapeHTML(rating)}</span>`:""}
+    ${allGenres.length?`<span class="meta-tag">${escapeHTML(allGenres.join(" · "))}</span>`:""}
+   </div>
+
+   <p class="detail-description">${escapeHTML(description)}</p>
+
+   <div class="source-links">
+    ${sourceLinks.join("")}
+   </div>
+
+   <p class="notice">Information gathered from public entertainment databases. Some details may be unavailable or vary between sources.</p>
+  `;
+
+  status.textContent="Information loaded.";
+ }catch(error){
+  status.textContent="Unable to load information.";
+  output.innerHTML=`
+   <p class="detail-description">
+    The information services are temporarily unavailable.
+    Please try again later.
+   </p>`;
+  console.error("Details error:",error);
  }
-
- status.textContent="Search finished. "+found+" results found from "+sources.length+" sources.";
-
- resultArea.insertAdjacentHTML(
-  "beforeend",
-  '<p class="notice">Details are supplied by independent public databases and may be incomplete or inaccurate.</p>'
- );
 }
 
 // CLOSE DETAILS
@@ -581,9 +674,7 @@ async function login(){
   return;
  }
 
- const {data,error}=await db.auth.signInWithPassword({
-  email,password
- });
+ const {data,error}=await db.auth.signInWithPassword({email,password});
 
  if(error){
   msg.textContent="Login failed: "+error.message;
@@ -660,9 +751,7 @@ async function editEntry(p){
  const newTitle=prompt("Edit title:",p.title);
  if(newTitle===null||!newTitle.trim())return;
 
- const categories=[
-  "Movie","TV Series","Web Series","Anime","Animation","Documentary"
- ];
+ const categories=["Movie","TV Series","Web Series","Anime","Animation","Documentary"];
 
  const newCategory=prompt(
   "Enter category: "+categories.join(", "),
